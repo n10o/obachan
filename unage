@@ -1,0 +1,139 @@
+#!/usr/bin/python
+from subprocess import call
+import os
+import sys
+import argparse
+import json
+from passlib.hash import sha512_crypt
+import string
+import random
+
+LISTFILE = "userlist.json"
+
+def add(args):
+    name = args.name[0]
+    user = {"name" : name}
+    if args.uid: user["uid"] = args.uid[0]
+    if args.group: user["group"] = args.group
+    if args.groups: user["groups"] = args.groups
+
+    #raw_pwd = ''.join([random.choice(string.ascii_letters + string.digits) for i in range(length)])
+    #encrypted_pwd = sha512_crypt.encrypt(pwd)
+
+    if os.path.exists(LISTFILE):
+       with open(LISTFILE) as f:
+           ul = json.load(f)
+           # TODO save order
+           # if use add option and use same username, it means modify it
+           if existName(name, ul):
+               modify(args)
+               return 0
+           else:
+               ul["userlist"].append(user)
+
+           with open(LISTFILE, 'w') as out:
+               json.dump(ul, out, indent=2)
+    else:
+        # if not exist file, create it
+        userlist = {"userlist":[user]}
+        with open(LISTFILE, 'w') as out:
+            json.dump(userlist, out, indent=2)
+
+def existName(name, json):
+    for user in json["userlist"]:
+        if user["name"] == name:
+            return True
+    return False
+
+def list(args):
+    with open(LISTFILE) as f:
+        ul = json.load(f)
+        for info in ul["userlist"]:
+            # TODO use ordereddict
+            output = "NAME:" + info["name"]
+            if info.get("uid"): output += " UID:" + str(info["uid"][0])
+            if info.get("group"): output += " GROUP:" + info["group"]
+            if info.get("groups"): output += " GROUPS:" + info["groups"]
+            print output
+
+def modify(args):
+    name = args.name[0]
+    # TODO
+    userlist = []
+    with open(LISTFILE) as f:
+        ul = json.load(f)
+        isExist = False
+        for user in ul["userlist"]:
+            if user["name"] == name:
+                if args.uid: user["uid"] = args.uid[0]
+                if args.group: user["group"] = args.group
+                if args.groups: user["groups"] = args.groups
+                isExist = True
+            userlist.append(user)
+        userdict = {"userlist":userlist}
+        if isExist:
+            print "MODIFIED:", name
+        else:
+            # TODO bug
+            return 1
+
+        with open(LISTFILE, 'w') as out:
+            json.dump(userdict, out, indent=2)
+
+def remove(args):
+    with open(LISTFILE) as f:
+        ul = json.load(f)
+        for user in ul["userlist"]:
+            name = args.name[0]
+            if user["name"] == name:
+                print "DELETE: " + name
+                break
+        # remove user
+        userlist = [u for u in ul["userlist"] if u.get('name') != name]
+        output = {"userlist":userlist}
+        with open(LISTFILE, 'w') as out:
+            json.dump(output, out, indent=2)
+
+def execute(args):
+    call(["ansible-playbook", "-i", "hosts", "task.yml", "--check"])
+
+def check(args):
+    call(["ansible-playbook", "-i", "hosts", "task.yml", "--check"])
+
+def main():
+    parser = argparse.ArgumentParser(description='User manage CUI tool for multiple hosts')
+    subparsers = parser.add_subparsers(help='Sub commands')
+    parser_add = subparsers.add_parser('add', help='Add user')
+    parser_add.add_argument('name', help='Set name', nargs=1)
+    parser_add.add_argument('-u', '--uid', nargs=1, type=int, help='Set User ID')
+    parser_add.add_argument('-g', '--group', help='Group')
+    parser_add.add_argument('-G', '--groups', help='Groups')
+    parser_add.set_defaults(func=add)
+    
+    parser_list = subparsers.add_parser('list')
+    parser_list.set_defaults(func=list)
+    
+    parser_modify = subparsers.add_parser('modify')
+    parser_modify.add_argument('name', help='Set name', nargs=1)
+    parser_modify.add_argument('-u', '--uid', nargs=1, type=int, help='Set User ID')
+    parser_modify.add_argument('-g', '--group', help='Group')
+    parser_modify.add_argument('-G', '--groups', help='Groups')
+    parser_modify.set_defaults(func=modify)
+    
+    parser_remove = subparsers.add_parser('remove')
+    parser_remove.add_argument('name', help='Set name', nargs=1)
+    parser_remove.set_defaults(func=remove)
+    
+    parser_check = subparsers.add_parser('check', help='Check result')
+    parser_check.set_defaults(func=check)
+    
+    parser_exec = subparsers.add_parser('exec', help='Execute user manage')
+    parser_exec.set_defaults(func=execute)
+    
+    args = parser.parse_args()
+    args.func(args)
+    # TODO
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
