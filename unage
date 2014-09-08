@@ -35,7 +35,7 @@ def add(args):
                json.dump(ul, out, indent=2)
     else:
         # if not exist file, create it
-        userlist = {"userlist":[user]}
+        userlist = {"userlist" : [user]}
         with open(LISTFILE, 'w') as out:
             json.dump(userlist, out, indent=2)
 
@@ -50,15 +50,14 @@ def list(args):
         ul = json.load(f)
         for info in ul["userlist"]:
             # TODO use ordereddict
-            output = "NAME:" + info["name"]
-            if info.get("uid"): output += " UID:" + str(info["uid"][0])
-            if info.get("group"): output += " GROUP:" + info["group"]
-            if info.get("groups"): output += " GROUPS:" + info["groups"]
+            output = "name:" + info["name"]
+            if info.get("uid"): output += " uid:" + str(info["uid"])
+            if info.get("group"): output += " group:" + info["group"]
+            if info.get("groups"): output += " groups:" + info["groups"]
             print output
 
 def modify(args):
     name = args.name[0]
-    # TODO
     userlist = []
     with open(LISTFILE) as f:
         ul = json.load(f)
