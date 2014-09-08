@@ -24,7 +24,7 @@ def add(args):
        with open(LISTFILE) as f:
            ul = json.load(f)
            # TODO save order
-           # if use add option and use same username, it means modify it
+           # if use add option and same name, it means modify
            if existName(name, ul):
                modify(args)
                return 0
@@ -73,7 +73,6 @@ def modify(args):
         if isExist:
             print "MODIFIED:", name
         else:
-            # TODO bug
             return 1
 
         with open(LISTFILE, 'w') as out:
@@ -130,9 +129,8 @@ def main():
     parser_exec.set_defaults(func=execute)
     
     args = parser.parse_args()
-    args.func(args)
+    return args.func(args)
     # TODO
-    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
