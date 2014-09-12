@@ -1,3 +1,7 @@
 *.json
 *.swp
+*.pyc
+*.egg-info
+.python-version
+keys
 hosts
